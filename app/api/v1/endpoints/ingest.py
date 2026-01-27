@@ -13,13 +13,10 @@ async def ingest_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
     
     temp_file = f"temp_{file.filename}"
-    print(f"Saving uploaded file to {temp_file}")
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    print(f"File saved to {temp_file}, starting ingestion process")
-    
     try:
-        toc = ingest_service.process_pdf_visual(temp_file)
+        toc = ingest_service.process_pdf_simple(temp_file)
         return IngestResponse(message="PDF ingested successfully", table_of_contents=toc)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

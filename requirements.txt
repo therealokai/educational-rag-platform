@@ -12,7 +12,6 @@ pypdf
 openai
 tiktoken
 python-dotenv
-loguru
 pytest
 httpx
 pdf2image

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     
     MAX_ITERATIONS: int = 3
     TOP_K_CONTEXT: int = 5
+
+    RAG_CHUNK_SIZE: int = 768
+    RAG_CHUNK_OVERLAP: int = 100
     
     class Config:
         env_file = ".env"
