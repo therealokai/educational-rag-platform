@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: Optional[str] = None
-    QDRANT_COLLECTION_NAME: str = "questions_rag"
+    QDRANT_COLLECTION_NAME: str = "educational_contents"
+    QDRANT_COLLECTION_NAME_OLD: str = "questions_rag"
     
     MODEL_NAME: str = "gpt-4.1"
     EMBEDDING_MODEL: str = "text-embedding-3-small"

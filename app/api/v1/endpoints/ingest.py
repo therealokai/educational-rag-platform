@@ -16,7 +16,7 @@ async def ingest_pdf(file: UploadFile = File(...)):
     with open(temp_file, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     try:
-        toc = ingest_service.process_pdf_simple(temp_file)
+        toc = ingest_service.process_pdf_simple_v2(temp_file)
         return IngestResponse(message="PDF ingested successfully", table_of_contents=toc)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

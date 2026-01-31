@@ -5,7 +5,9 @@ from typing import List
 from app.services.llm_service import LLMService
 from langchain_core.documents import Document
 from utils.helpers import safe_load_json, pil_image_to_base64
-from utils.prompts import VISUAL_ANALYST_PROMPT
+from utils.prompts import (VISUAL_ANALYST_PROMPT,
+                           TOC_TEXT_EXTRACTOR_PROMPT,
+                            PAGE_CHUNK_TEXT_PROMPT)
 
 class IngestService:
     def __init__(self):
@@ -47,6 +49,50 @@ class IngestService:
             })
 
             normalized_chunks.append(Document(page_content=summary, metadata=metadata))
+        self.vectorstore.add_documents(normalized_chunks)
+        print(f"Added {len(normalized_chunks)} chunks to vector store")
+        return list(set(toc))
+    
+    def process_pdf_simple_v2(self, file_path: str) -> List[str]:
+        docs = self.loader.load(file_path)        
+        toc = []
+        for doc in docs[:10]:
+            lines = doc.page_content.strip().split('\n')
+            if lines:
+                toc.append(lines[0])
+        chunks = self.splitter.split(docs)
+        normalized_chunks: List[Document] = []
+        first_pages_text = " ".join([doc.page_content for doc in docs[:3]])
+        toc_prompt = TOC_TEXT_EXTRACTOR_PROMPT.format(page_text=first_pages_text)
+        print("Extracting Table of Contents using LLM...")
+        print("TOC Prompt:", toc_prompt)
+        toc_response = self.llm_service.predict_messages(prompt=toc_prompt)
+        toc_json = safe_load_json(toc_response)
+        for c in chunks:
+            page_chunk_text_prompt = PAGE_CHUNK_TEXT_PROMPT.format(toc_json=toc_json, page_text=c.page_content)
+            print("Processing chunk with LLM...")
+            print("Page Chunk Prompt:", page_chunk_text_prompt)
+            llm_response = self.llm_service.predict_messages(prompt=page_chunk_text_prompt)
+            parsed_response = safe_load_json(llm_response)
+            print("Parsed LLM Response:", parsed_response)
+            if parsed_response and "canonical_text" in parsed_response:
+                text = parsed_response["canonical_text"]
+            else:
+                text = c.page_content or ""
+
+            metadata = {}
+            try:
+                metadata.update(
+                    {
+                        "subject": parsed_response.get("subject", None),
+                        "topics": parsed_response.get("topics", []),
+                        "subtopics": parsed_response.get("subtopics", []),
+                    }
+                )
+            except Exception:
+                metadata = {}
+
+            normalized_chunks.append(Document(page_content=text, metadata=metadata))
         self.vectorstore.add_documents(normalized_chunks)
         print(f"Added {len(normalized_chunks)} chunks to vector store")
         return list(set(toc))
